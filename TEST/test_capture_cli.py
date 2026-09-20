@@ -1,6 +1,7 @@
 """CLI checks using mocked live capture and a synthetic offline PCAP."""
 
 import io
+import json
 import tempfile
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
@@ -84,13 +85,32 @@ class CaptureCLITests(unittest.TestCase):
         self.assertEqual(result, 130)
         self.assertIn("Capture stopped.", output.getvalue())
 
-    def test_handler_prints_capture_timestamp_and_summary(self):
-        packet = IP(src="192.0.2.1", dst="192.0.2.2") / UDP()
+    def test_handler_prints_one_normalized_json_event(self):
+        packet = IP(src="192.0.2.1", dst="192.0.2.2") / UDP(sport=12345, dport=12346)
         packet.time = 1700000000.125
         output = io.StringIO()
         with redirect_stdout(output):
             self.assertIsNone(main.handle_packet(packet))
-        self.assertEqual(output.getvalue(), f"{packet.time} {packet.summary()}\n")
+        event = json.loads(output.getvalue())
+        self.assertEqual(event["packet_id"], 1)
+        self.assertEqual(event["timestamp"], "2023-11-14T22:13:20.125000+00:00")
+        self.assertEqual(event["transport_protocol"], "UDP")
+        self.assertEqual(event["src_ip"], "192.0.2.1")
+        self.assertEqual(event["dst_ip"], "192.0.2.2")
+
+    def test_output_file_contains_json_lines(self):
+        packet = IP(src="192.0.2.1", dst="192.0.2.2") / UDP(sport=12345, dport=12346)
+        packet.time = 1700000000.125
+        with tempfile.TemporaryDirectory() as directory:
+            pcap_file = str(Path(directory) / "sample.pcap")
+            output_file = str(Path(directory) / "events.jsonl")
+            wrpcap(pcap_file, [packet])
+            with redirect_stdout(io.StringIO()):
+                result = main.main(["--pcap", pcap_file, "--output", output_file])
+            self.assertEqual(result, 0)
+            lines = Path(output_file).read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(lines), 1)
+            self.assertEqual(json.loads(lines[0])["packet_id"], 1)
 
     def test_real_pcap_playback_preserves_timestamp_and_count(self):
         packet = (
@@ -110,10 +130,15 @@ class CaptureCLITests(unittest.TestCase):
                     self.assertEqual(result, 0)
                     lines = output.getvalue().splitlines()
                     self.assertEqual(len(lines), expected_lines)
-                    for line in lines:
-                        self.assertTrue(line.startswith("1700000000.125"))
-                        self.assertIn("192.0.2.1", line)
-                        self.assertIn("192.0.2.2", line)
+                    events = [json.loads(line) for line in lines]
+                    self.assertEqual(
+                        [event["packet_id"] for event in events],
+                        list(range(1, expected_lines + 1)),
+                    )
+                    for event in events:
+                        self.assertEqual(event["timestamp"], "2023-11-14T22:13:20.125000+00:00")
+                        self.assertEqual(event["src_ip"], "192.0.2.1")
+                        self.assertEqual(event["dst_ip"], "192.0.2.2")
 
 
 if __name__ == "__main__":

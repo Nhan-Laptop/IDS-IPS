@@ -1,15 +1,16 @@
-/home/nhanlaptop/miniconda3/lib/python3.14/site-packages/scapy/layers/tls/crypto/groups.py:25: CryptographyDeprecationWarning: Diffie-Hellman over finite fields (FFDH) is deprecated and support will be removed in a future release. Use a more modern key exchange algorithm.
-  from cryptography.hazmat.primitives.asymmetric.dh import DHParameterNumbers
-test_capture_errors_have_readable_messages (test_capture_cli.CaptureCLITests.test_capture_errors_have_readable_messages) ... ok
-test_handler_prints_capture_timestamp_and_summary (test_capture_cli.CaptureCLITests.test_handler_prints_capture_timestamp_and_summary) ... ok
-test_interrupt_is_handled (test_capture_cli.CaptureCLITests.test_interrupt_is_handled) ... ok
-test_invalid_arguments_do_not_start_capture (test_capture_cli.CaptureCLITests.test_invalid_arguments_do_not_start_capture) ... ok
-test_live_capture_defaults (test_capture_cli.CaptureCLITests.test_live_capture_defaults) ... ok
-test_live_capture_uses_shared_handler (test_capture_cli.CaptureCLITests.test_live_capture_uses_shared_handler) ... ok
-test_pcap_uses_shared_handler (test_capture_cli.CaptureCLITests.test_pcap_uses_shared_handler) ... ok
-test_real_pcap_playback_preserves_timestamp_and_count (test_capture_cli.CaptureCLITests.test_real_pcap_playback_preserves_timestamp_and_count) ... ok
+test_capture_errors_have_readable_messages (TEST.test_capture_cli.CaptureCLITests.test_capture_errors_have_readable_messages) ... ok
+test_handler_prints_one_normalized_json_event (TEST.test_capture_cli.CaptureCLITests.test_handler_prints_one_normalized_json_event) ... ok
+test_interrupt_is_handled (TEST.test_capture_cli.CaptureCLITests.test_interrupt_is_handled) ... ok
+test_invalid_arguments_do_not_start_capture (TEST.test_capture_cli.CaptureCLITests.test_invalid_arguments_do_not_start_capture) ... ok
+test_live_capture_defaults (TEST.test_capture_cli.CaptureCLITests.test_live_capture_defaults) ... ok
+test_live_capture_uses_shared_handler (TEST.test_capture_cli.CaptureCLITests.test_live_capture_uses_shared_handler) ... ok
+test_output_file_contains_json_lines (TEST.test_capture_cli.CaptureCLITests.test_output_file_contains_json_lines) ... ok
+test_pcap_uses_shared_handler (TEST.test_capture_cli.CaptureCLITests.test_pcap_uses_shared_handler) ... ok
+test_real_pcap_playback_preserves_timestamp_and_count (TEST.test_capture_cli.CaptureCLITests.test_real_pcap_playback_preserves_timestamp_and_count) ... ok
 
 ----------------------------------------------------------------------
-Ran 8 tests in 0.008s
+Ran 9 tests in 0.008s
 
 OK
+
+Capture test exit code: 0

@@ -1,0 +1,20 @@
+test_dns_query (TEST.test_pipeline.PacketPipelineTests.test_dns_query) ... ok
+test_dns_response (TEST.test_pipeline.PacketPipelineTests.test_dns_response) ... ok
+test_http_get_on_non_standard_port (TEST.test_pipeline.PacketPipelineTests.test_http_get_on_non_standard_port) ... ok
+test_http_post_with_body (TEST.test_pipeline.PacketPipelineTests.test_http_post_with_body) ... ok
+test_http_response (TEST.test_pipeline.PacketPipelineTests.test_http_response) ... ok
+test_malformed_packet_does_not_crash (TEST.test_pipeline.PacketPipelineTests.test_malformed_packet_does_not_crash) ... ok
+test_smtp_commands (TEST.test_pipeline.PacketPipelineTests.test_smtp_commands) ... ok
+test_smtp_response (TEST.test_pipeline.PacketPipelineTests.test_smtp_response) ... ok
+test_tcp_data (TEST.test_pipeline.PacketPipelineTests.test_tcp_data) ... ok
+test_tcp_handshake (TEST.test_pipeline.PacketPipelineTests.test_tcp_handshake) ... ok
+test_udp (TEST.test_pipeline.PacketPipelineTests.test_udp) ... ok
+test_unknown_protocol_does_not_crash (TEST.test_pipeline.PacketPipelineTests.test_unknown_protocol_does_not_crash) ... ok
+test_unsupported_network_protocol_does_not_crash (TEST.test_pipeline.PacketPipelineTests.test_unsupported_network_protocol_does_not_crash) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.009s
+
+OK
+
+Pipeline test exit code: 0
