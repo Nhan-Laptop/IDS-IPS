@@ -105,6 +105,40 @@ def parse_packet(packet: Packet, packet_id: int) -> dict[str, Any]:
     return _json_compatible(event)
 
 
+def error_event(
+    packet_id: int,
+    message: str,
+    *,
+    status: str = "MALFORMED",
+) -> dict[str, Any]:
+    """Build a normalized event for input that could not be parsed at all.
+
+    The capture layer uses this for truncated PCAP records or for parser
+    failures, so a broken input still produces one JSON-compatible event
+    instead of stopping the program.
+    """
+    return _json_compatible(
+        {
+            "packet_id": packet_id,
+            "timestamp": None,
+            "src_ip": None,
+            "dst_ip": None,
+            "network_protocol": "UNKNOWN",
+            "transport_protocol": "UNKNOWN",
+            "src_port": None,
+            "dst_port": None,
+            "tcp_flags": [],
+            "tcp_sequence": None,
+            "tcp_acknowledgment": None,
+            "tcp_window": None,
+            "application_protocol": "UNKNOWN",
+            "payload_length": 0,
+            "parse_status": status,
+            "error": message,
+        }
+    )
+
+
 def _timestamp(packet: Packet) -> str | None:
     """Return an ISO-8601 UTC timestamp when Scapy supplied one."""
     value = getattr(packet, "time", None)
