@@ -15,6 +15,7 @@ from parsers import parse_packet
 
 PacketHandler = Callable[[Packet], Any]
 _packet_id = 0
+UNKNOWN_POLICIES = ("mark", "skip")
 
 
 def Capture_through_interface(
@@ -84,14 +85,25 @@ def handle_packet(packet: Packet) -> None:
     _write_event(parse_packet(packet, _packet_id), sys.stdout)
 
 
-def make_packet_handler(output: TextIO) -> PacketHandler:
-    """Create a packet callback with an independent packet-id sequence."""
+def make_packet_handler(output: TextIO, *, unknown_policy: str = "mark") -> PacketHandler:
+    """Create a packet callback writing JSON Lines with its own packet ids.
+
+    With ``unknown_policy="skip"`` the events of packets whose application
+    protocol could not be identified are dropped instead of being written.
+    Packet ids still follow the captured packet order, so a gap marks a
+    skipped packet.
+    """
+    if unknown_policy not in UNKNOWN_POLICIES:
+        raise ValueError("unknown_policy must be 'mark' or 'skip'")
     packet_id = 0
 
     def packet_handler(packet: Packet) -> None:
         nonlocal packet_id
         packet_id += 1
-        _write_event(parse_packet(packet, packet_id), output)
+        event = parse_packet(packet, packet_id)
+        if unknown_policy == "skip" and event["application_protocol"] == "UNKNOWN":
+            return
+        _write_event(event, output)
 
     return packet_handler
 
@@ -132,6 +144,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--output", help="JSON Lines output file (default: print events to stdout)"
     )
+    parser.add_argument(
+        "--unknown-policy",
+        choices=UNKNOWN_POLICIES,
+        default="mark",
+        help="mark unknown application protocols or skip their events",
+    )
     args = parser.parse_args(argv)
 
     if args.count < 0:
@@ -147,9 +165,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.output:
             with open(args.output, "w", encoding="utf-8") as output:
-                _capture_from_args(args, make_packet_handler(output))
-        else:
+                handler = make_packet_handler(output, unknown_policy=args.unknown_policy)
+                _capture_from_args(args, handler)
+        elif args.unknown_policy == "mark":
             _capture_from_args(args, handle_packet)
+        else:
+            handler = make_packet_handler(sys.stdout, unknown_policy=args.unknown_policy)
+            _capture_from_args(args, handler)
     except KeyboardInterrupt:
         print("\nCapture stopped.", file=sys.stderr)
         return 130
