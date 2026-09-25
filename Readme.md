@@ -115,6 +115,35 @@ The detector combines payload signatures with conventional ports. It does not de
 
 Unknown application protocols are represented as `"UNKNOWN"` and do not stop capture.
 
+### Non-standard ports (§4)
+
+Port numbers are hints, never the only evidence:
+
+- HTTP requests and responses are recognized from their start line, so
+  `PUT /upload HTTP/1.0` is parsed on port 18080 as well.
+- SMTP commands and status lines are recognized from their payload shape on
+  any port.
+- DNS is parsed from a structurally valid message, including DNS over TCP
+  with its two-byte length prefix. The header counts must match the decoded
+  records, which keeps binary false positives out.
+- Conventional ports (`80`, `8080`, `25`, `53`, `5300`, `5353`) are used as
+  a secondary hint, mainly so that broken DNS traffic on port 53 is still
+  reported as DNS with `parse_status` `MALFORMED` instead of `UNKNOWN`.
+
+### Unknown application policy (§5)
+
+Packets whose application protocol cannot be identified are handled by
+configuration:
+
+- `--unknown-policy mark` (default) writes the packet as an event with
+  `"application_protocol": "UNKNOWN"` so later IDS stages can still score it.
+- `--unknown-policy skip` drops those events. Packet ids still follow the
+  captured packet order, so a gap in `packet_id` marks a skipped packet.
+
+```bash
+python main.py --pcap test.pcap --unknown-policy skip
+```
+
 ## Normalized JSON Lines output
 
 Each packet produces one JSON object on one line. By default, events are printed to standard output:
@@ -149,6 +178,32 @@ A normalized event contains common fields such as:
 
 Protocol-specific fields are added when available, for example `http_method`, `headers`, `dns_questions`, `dns_answers`, or `smtp_status_code`.
 
+### Normalized event schema (§6)
+
+`parsers/schema.py` defines the output contract and `parsers.validate_event(event)`
+returns the schema problems of one event, where an empty list means valid.
+Every event always contains the same common fields:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `packet_id` | integer | 1-based captured packet order |
+| `timestamp` | string / null | ISO-8601 UTC capture time |
+| `src_ip`, `dst_ip` | string / null | IPv4 addresses |
+| `network_protocol` | string | `IPv4` or `UNKNOWN` |
+| `transport_protocol` | string | `TCP`, `UDP`, or `UNKNOWN` |
+| `src_port`, `dst_port` | integer / null | Ports when a transport header exists |
+| `tcp_flags` | list of strings | `FIN`, `SYN`, `RST`, `PSH`, `ACK`, `URG`, `ECE`, `CWR` |
+| `tcp_sequence`, `tcp_acknowledgment`, `tcp_window` | integer / null | TCP header values |
+| `application_protocol` | string | `HTTP`, `DNS`, `SMTP`, or `UNKNOWN` |
+| `payload_length` | integer | Transport payload size in bytes |
+| `parse_status` | string | `OK`, `UNSUPPORTED`, `INCOMPLETE`, or `MALFORMED` |
+| `error` | string | Present only when parsing could not complete |
+
+Protocol parsers only add their documented optional fields (`http_*`,
+`status_code`, `headers`, `body`, `dns_*`, `smtp_*`). Raw packet bytes and
+Scapy objects are never placed into an event, which is what allows the later
+detection engine to work without touching raw packets.
+
 ## Error handling
 
 Malformed, truncated, unsupported, or incomplete packets are converted into an event instead of crashing the capture loop. The event can contain one of these statuses:
@@ -169,11 +224,18 @@ parsers/
   __init__.py              Public parser entry point
   errors.py                Parser error types
   pipeline.py              IPv4 -> TCP/UDP -> application -> event pipeline
+  schema.py                Normalized event schema and validator
 TEST/
   test_capture_cli.py      Capture, CLI, JSONL, and PCAP tests
   test_pipeline.py         Required protocol and error-handling tests
+  test_nonstandard_ports.py  Non-standard port detection tests
+  test_unknown_policy.py   Unknown protocol mark/skip tests
+  test_event_schema.py     Normalized output structure tests
   capture_cli_results.txt  Capture test output
   pipeline_results.txt     Parser test output
+  nonstandard_ports_results.txt  Non-standard port test output
+  unknown_policy_results.txt     Unknown policy test output
+  event_schema_results.txt       Schema test output
 docs/
   Bai-tap-01_Packet_Capture_Parser_IDS.pdf
 ```
@@ -201,6 +263,9 @@ The current suite covers:
 - SMTP commands and responses.
 - Unknown protocol, unsupported packet, and malformed packet handling.
 - Shared live/PCAP callback wiring and JSON Lines output.
+- Non-standard port detection for HTTP, DNS over UDP/TCP, and SMTP.
+- Unknown protocol mark/skip configuration.
+- Normalized event schema validation for HTTP, DNS, SMTP, unknown, unsupported, and malformed packets.
 
 ## Current scope and next steps
 
