@@ -14,6 +14,7 @@ The current code covers:
 - **§6 Normalized JSON-compatible event structure**.
 - **§7 Error handling** for malformed, unsupported, empty, truncated, and undecodable input.
 - **§8 Logging** of parse results as a JSON Lines file.
+- **§9 Mandatory test cases** with committed captures, logs and a mapping document.
 
 Both capture modes use the same packet callback and the same parser. There are not separate parsers for live traffic and PCAP input.
 
@@ -267,6 +268,37 @@ also records problems that are not packets:
 Every logged event, including these error events, passes
 `parsers.validate_event()`.
 
+## Mandatory test cases (§9)
+
+All twelve mandatory test cases are executed through the real command line
+entry point on committed captures, so each one exercises PCAP import, the
+shared pipeline, the normalized event and the JSON Lines log:
+
+```bash
+python -m unittest TEST.test_mandatory_cases -v
+python TEST/make_test_pcaps.py   # regenerate captures, logs and summary
+```
+
+| Test | Capture | Observed result |
+|---|---|---|
+| TCP handshake | `TEST/pcap/tcp_handshake.pcap` | `SYN`, `SYN/ACK`, `ACK` |
+| TCP data | `TEST/pcap/tcp_data.pcap` | `TCP` with `payload_length` `17` |
+| UDP | `TEST/pcap/udp.pcap` | `UDP` with `payload_length` `17` |
+| HTTP GET | `TEST/pcap/http_get.pcap` | `GET /index.html HTTP/1.1`, `headers.host` |
+| HTTP POST | `TEST/pcap/http_post.pcap` | `POST /login`, body `username=alice&password=secret` |
+| HTTP response | `TEST/pcap/http_response.pcap` | `status_code` `200`, `reason_phrase` `OK`, `headers.server` |
+| DNS query | `TEST/pcap/dns_query.pcap` | `dns_questions` `example.com` `A` |
+| DNS response | `TEST/pcap/dns_response.pcap` | `dns_answers` `example.com` `A` `93.184.216.34` |
+| SMTP command | `TEST/pcap/smtp_command.pcap` | `EHLO`, `MAIL FROM`, `RCPT TO` with arguments |
+| SMTP response | `TEST/pcap/smtp_response.pcap` | `smtp_status_code` `250` |
+| Unknown protocol | `TEST/pcap/unknown_protocol.pcap` | `UNKNOWN`, exit code `0`, no crash |
+| Malformed packet | `TEST/pcap/malformed_packet.pcap` | `MALFORMED`, `error` `invalid IPv4 header length`, exit code `0` |
+
+The recorded evidence is committed in `TEST/output/`: one JSON Lines log per
+case plus `summary.txt`. `TEST/TESTCASES.md` maps every assignment requirement
+to its test method, capture and observed result.
+
+
 ## Project structure
 
 ```text
@@ -291,6 +323,13 @@ TEST/
   event_schema_results.txt       Schema test output
   error_handling_results.txt     Error handling test output
   jsonl_log_results.txt          JSON Lines log test output
+  mandatory_cases_results.txt    Section 9 test output
+  TESTCASES.md             Requirement to test mapping
+  mandatory_cases.py       Section 9 packet builders
+  make_test_pcaps.py       Section 9 evidence generator
+  test_mandatory_cases.py  Section 9 end-to-end tests
+  pcap/                    Generated captures for the section 9 cases
+  output/                  Recorded JSON Lines logs and summary
 docs/
   Bai-tap-01_Packet_Capture_Parser_IDS.pdf
 ```
@@ -323,6 +362,7 @@ The current suite covers:
 - Normalized event schema validation for HTTP, DNS, SMTP, unknown, unsupported, and malformed packets.
 - Error containment for malformed, unsupported, missing-header, empty-payload, truncated-PCAP, and undecodable-payload input.
 - JSON Lines logging of every event, including truncated and unreadable PCAP records and capture failures.
+- Section 9 mandatory test cases executed end-to-end through the CLI, with captures and logs committed under `TEST/pcap/` and `TEST/output/`.
 
 ## Current scope and next steps
 
