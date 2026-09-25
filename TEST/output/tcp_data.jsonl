@@ -1,0 +1,1 @@
+{"application_protocol": "UNKNOWN", "dst_ip": "10.0.0.2", "dst_port": 9000, "network_protocol": "IPv4", "packet_id": 1, "parse_status": "OK", "payload_length": 17, "src_ip": "10.0.0.1", "src_port": 40000, "tcp_acknowledgment": 0, "tcp_flags": ["PSH", "ACK"], "tcp_sequence": 0, "tcp_window": 8192, "timestamp": "2026-09-25T13:54:18.374730+00:00", "transport_protocol": "TCP"}

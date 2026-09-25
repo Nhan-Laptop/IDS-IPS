@@ -1,0 +1,43 @@
+Section 9 mandatory test case evidence
+========================================
+
+tcp_handshake: 3 packet(s), exit code 0
+    packet_id=1 proto=UNKNOWN status=OK tcp_flags=["SYN"] payload_length=0
+    packet_id=2 proto=UNKNOWN status=OK tcp_flags=["SYN", "ACK"] payload_length=0
+    packet_id=3 proto=UNKNOWN status=OK tcp_flags=["ACK"] payload_length=0
+
+tcp_data: 1 packet(s), exit code 0
+    packet_id=1 proto=UNKNOWN status=OK tcp_flags=["PSH", "ACK"] payload_length=17
+
+udp: 1 packet(s), exit code 0
+    packet_id=1 proto=UNKNOWN status=OK tcp_flags=[] payload_length=17
+
+http_get: 1 packet(s), exit code 0
+    packet_id=1 proto=HTTP status=OK http_message_type="request" http_method="GET" http_target="/index.html" tcp_flags=["PSH", "ACK"] payload_length=73
+
+http_post: 1 packet(s), exit code 0
+    packet_id=1 proto=HTTP status=OK http_message_type="request" http_method="POST" http_target="/login" tcp_flags=["PSH", "ACK"] payload_length=143
+
+http_response: 1 packet(s), exit code 0
+    packet_id=1 proto=HTTP status=OK http_message_type="response" status_code=200 tcp_flags=["PSH", "ACK"] payload_length=97
+
+dns_query: 1 packet(s), exit code 0
+    packet_id=1 proto=DNS status=OK dns_questions=[{"name": "example.com", "type": "A"}] dns_answers=[] tcp_flags=[] payload_length=29
+
+dns_response: 1 packet(s), exit code 0
+    packet_id=1 proto=DNS status=OK dns_questions=[{"name": "example.com", "type": "A"}] dns_answers=[{"data": "93.184.216.34", "name": "example.com", "ttl": 300, "type": "A"}] tcp_flags=[] payload_length=56
+
+smtp_command: 3 packet(s), exit code 0
+    packet_id=1 proto=SMTP status=OK smtp_command="EHLO" tcp_flags=["PSH", "ACK"] payload_length=24
+    packet_id=2 proto=SMTP status=OK smtp_command="MAIL FROM" tcp_flags=["PSH", "ACK"] payload_length=32
+    packet_id=3 proto=SMTP status=OK smtp_command="RCPT TO" tcp_flags=["PSH", "ACK"] payload_length=28
+
+smtp_response: 1 packet(s), exit code 0
+    packet_id=1 proto=SMTP status=OK smtp_status_code=250 tcp_flags=["PSH", "ACK"] payload_length=14
+
+unknown_protocol: 1 packet(s), exit code 0
+    packet_id=1 proto=UNKNOWN status=OK tcp_flags=[] payload_length=32
+
+malformed_packet: 1 packet(s), exit code 0
+    packet_id=1 proto=UNKNOWN status=MALFORMED tcp_flags=[] payload_length=0 error=invalid IPv4 header length
+

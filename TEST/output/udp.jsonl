@@ -1,0 +1,1 @@
+{"application_protocol": "UNKNOWN", "dst_ip": "10.0.0.2", "dst_port": 9001, "network_protocol": "IPv4", "packet_id": 1, "parse_status": "OK", "payload_length": 17, "src_ip": "10.0.0.1", "src_port": 40000, "tcp_acknowledgment": null, "tcp_flags": [], "tcp_sequence": null, "tcp_window": null, "timestamp": "2026-09-25T13:54:18.377415+00:00", "transport_protocol": "UDP"}
