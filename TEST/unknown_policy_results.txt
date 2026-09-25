@@ -1,0 +1,13 @@
+test_handler_rejects_invalid_policy (TEST.test_unknown_policy.UnknownPolicyTests.test_handler_rejects_invalid_policy) ... ok
+test_invalid_policy_is_rejected_before_capture (TEST.test_unknown_policy.UnknownPolicyTests.test_invalid_policy_is_rejected_before_capture) ... ok
+test_marked_unknown_event_keeps_diagnostics (TEST.test_unknown_policy.UnknownPolicyTests.test_marked_unknown_event_keeps_diagnostics) ... ok
+test_skip_policy_applies_to_standard_output (TEST.test_unknown_policy.UnknownPolicyTests.test_skip_policy_applies_to_standard_output) ... ok
+test_skip_policy_drops_unknown_events (TEST.test_unknown_policy.UnknownPolicyTests.test_skip_policy_drops_unknown_events) ... ok
+test_unknown_packets_are_marked_by_default (TEST.test_unknown_policy.UnknownPolicyTests.test_unknown_packets_are_marked_by_default) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.019s
+
+OK
+
+Unknown policy test exit code: 0
