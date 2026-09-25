@@ -1,0 +1,15 @@
+test_dns_over_tcp_with_length_prefix_on_non_standard_port (TEST.test_nonstandard_ports.NonStandardPortTests.test_dns_over_tcp_with_length_prefix_on_non_standard_port) ... ok
+test_dns_query_on_non_standard_port (TEST.test_nonstandard_ports.NonStandardPortTests.test_dns_query_on_non_standard_port) ... ok
+test_dns_response_on_non_standard_port (TEST.test_nonstandard_ports.NonStandardPortTests.test_dns_response_on_non_standard_port) ... ok
+test_http_request_on_non_standard_port (TEST.test_nonstandard_ports.NonStandardPortTests.test_http_request_on_non_standard_port) ... ok
+test_http_response_on_non_standard_port (TEST.test_nonstandard_ports.NonStandardPortTests.test_http_response_on_non_standard_port) ... ok
+test_smtp_command_on_non_standard_port (TEST.test_nonstandard_ports.NonStandardPortTests.test_smtp_command_on_non_standard_port) ... ok
+test_smtp_response_on_non_standard_port (TEST.test_nonstandard_ports.NonStandardPortTests.test_smtp_response_on_non_standard_port) ... ok
+test_unstructured_payload_on_high_port_stays_unknown (TEST.test_nonstandard_ports.NonStandardPortTests.test_unstructured_payload_on_high_port_stays_unknown) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.015s
+
+OK
+
+Non-standard port test exit code: 0
