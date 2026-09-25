@@ -1,0 +1,17 @@
+test_dns_event_carries_documented_fields (TEST.test_event_schema.NormalizedEventTests.test_dns_event_carries_documented_fields) ... ok
+test_every_event_has_the_common_fields (TEST.test_event_schema.NormalizedEventTests.test_every_event_has_the_common_fields) ... ok
+test_every_event_is_json_compatible (TEST.test_event_schema.NormalizedEventTests.test_every_event_is_json_compatible) ... ok
+test_every_event_matches_the_schema (TEST.test_event_schema.NormalizedEventTests.test_every_event_matches_the_schema) ... ok
+test_http_event_carries_documented_fields (TEST.test_event_schema.NormalizedEventTests.test_http_event_carries_documented_fields) ... ok
+test_smtp_event_carries_documented_fields (TEST.test_event_schema.NormalizedEventTests.test_smtp_event_carries_documented_fields) ... ok
+test_validation_rejects_non_json_values (TEST.test_event_schema.NormalizedEventTests.test_validation_rejects_non_json_values) ... ok
+test_validation_reports_invalid_values (TEST.test_event_schema.NormalizedEventTests.test_validation_reports_invalid_values) ... ok
+test_validation_reports_missing_common_fields (TEST.test_event_schema.NormalizedEventTests.test_validation_reports_missing_common_fields) ... ok
+test_validation_reports_undocumented_fields (TEST.test_event_schema.NormalizedEventTests.test_validation_reports_undocumented_fields) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.032s
+
+OK
+
+Event schema test exit code: 0
