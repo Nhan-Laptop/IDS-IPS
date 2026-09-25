@@ -14,6 +14,30 @@ from scapy.error import Scapy_Exception
 import main
 
 
+
+class _FakePcapReader:
+    """Minimal stand-in for Scapy's PcapReader in capture tests."""
+
+    def __init__(self, packets):
+        self._packets = list(packets)
+        self.snaplen = 65535
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        self.closed = True
+        return False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if not self._packets:
+            raise StopIteration
+        return self._packets.pop(0)
+
 class CaptureCLITests(unittest.TestCase):
     def test_live_capture_uses_shared_handler(self):
         with patch("main.sniff") as sniff:
@@ -37,12 +61,20 @@ class CaptureCLITests(unittest.TestCase):
         )
 
     def test_pcap_uses_shared_handler(self):
-        with patch("main.sniff") as sniff:
-            result = main.main(["--pcap", "sample.pcap", "--count", "2"])
+        packets = [
+            IP(src="10.0.0.1", dst="10.0.0.2") / UDP(sport=1, dport=2),
+            IP(src="10.0.0.1", dst="10.0.0.2") / UDP(sport=3, dport=4),
+        ]
+        reader = _FakePcapReader(packets)
+        output = io.StringIO()
+        with patch("main.PcapReader", return_value=reader):
+            with redirect_stdout(output):
+                result = main.main(["--pcap", "sample.pcap", "--count", "1"])
         self.assertEqual(result, 0)
-        sniff.assert_called_once_with(
-            offline="sample.pcap", prn=main.handle_packet, count=2, store=False,
-        )
+        events = [json.loads(line) for line in output.getvalue().splitlines()]
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0]["packet_id"], 1)
+        self.assertTrue(reader.closed)
 
     def test_invalid_arguments_do_not_start_capture(self):
         cases = [

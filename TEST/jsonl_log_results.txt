@@ -1,0 +1,14 @@
+test_log_has_one_json_object_per_line (TEST.test_jsonl_log.JsonLinesLogTests.test_log_has_one_json_object_per_line) ... ok
+test_log_keeps_capture_order_and_protocols (TEST.test_jsonl_log.JsonLinesLogTests.test_log_keeps_capture_order_and_protocols) ... ok
+test_log_records_capture_failure (TEST.test_jsonl_log.JsonLinesLogTests.test_log_records_capture_failure) ... ok
+test_log_records_truncated_pcap_notice (TEST.test_jsonl_log.JsonLinesLogTests.test_log_records_truncated_pcap_notice) ... ok
+test_skip_policy_writes_one_line_per_written_event (TEST.test_jsonl_log.JsonLinesLogTests.test_skip_policy_writes_one_line_per_written_event) ... ok
+test_standard_output_is_also_json_lines (TEST.test_jsonl_log.JsonLinesLogTests.test_standard_output_is_also_json_lines) ... ok
+test_writer_counts_processed_and_written_events (TEST.test_jsonl_log.JsonLinesLogTests.test_writer_counts_processed_and_written_events) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.054s
+
+OK
+
+JSON Lines log test exit code: 0

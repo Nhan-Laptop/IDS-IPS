@@ -1,0 +1,21 @@
+test_capture_failure_returns_error_code_instead_of_crashing (TEST.test_error_handling.ErrorHandlingTests.test_capture_failure_returns_error_code_instead_of_crashing) ... ok
+test_empty_payload_does_not_crash (TEST.test_error_handling.ErrorHandlingTests.test_empty_payload_does_not_crash) ... ok
+test_error_event_is_schema_valid (TEST.test_error_handling.ErrorHandlingTests.test_error_event_is_schema_valid) ... ok
+test_interrupt_returns_shell_convention (TEST.test_error_handling.ErrorHandlingTests.test_interrupt_returns_shell_convention) ... ok
+test_malformed_ipv4_header_does_not_crash (TEST.test_error_handling.ErrorHandlingTests.test_malformed_ipv4_header_does_not_crash) ... ok
+test_missing_ipv4_header_does_not_crash (TEST.test_error_handling.ErrorHandlingTests.test_missing_ipv4_header_does_not_crash) ... ok
+test_parser_failure_is_contained (TEST.test_error_handling.ErrorHandlingTests.test_parser_failure_is_contained) ... ok
+test_truncated_file_still_processes_readable_packets (TEST.test_error_handling.ErrorHandlingTests.test_truncated_file_still_processes_readable_packets) ... ok
+test_truncated_record_data_is_reported (TEST.test_error_handling.ErrorHandlingTests.test_truncated_record_data_is_reported) ... ok
+test_truncated_transport_header_does_not_crash (TEST.test_error_handling.ErrorHandlingTests.test_truncated_transport_header_does_not_crash) ... ok
+test_undecodable_dns_payload_does_not_crash (TEST.test_error_handling.ErrorHandlingTests.test_undecodable_dns_payload_does_not_crash) ... ok
+test_undecodable_http_body_does_not_crash (TEST.test_error_handling.ErrorHandlingTests.test_undecodable_http_body_does_not_crash) ... ok
+test_unreadable_record_is_reported_without_stopping (TEST.test_error_handling.ErrorHandlingTests.test_unreadable_record_is_reported_without_stopping) ... ok
+test_unsupported_transport_protocol_does_not_crash (TEST.test_error_handling.ErrorHandlingTests.test_unsupported_transport_protocol_does_not_crash) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.042s
+
+OK
+
+Error handling test exit code: 0
