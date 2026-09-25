@@ -29,6 +29,10 @@ _SMTP_COMMAND = re.compile(
 )
 _SMTP_RESPONSE = re.compile(rb"^(\d{3})(?:[ -]([^\r\n]*))?(?:\r?\n|$)")
 
+_HTTP_PORTS = (80, 8080, 8000, 8008, 8888)
+_DNS_PORTS = (53, 5353)
+_SMTP_PORTS = (25, 465, 587, 2525)
+
 
 def parse_packet(packet: Packet, packet_id: int) -> dict[str, Any]:
     """Convert one Scapy packet into a JSON-compatible normalized event.
@@ -210,27 +214,30 @@ def detect_application_protocol(
     dst_port: int | None,
     packet: Packet | None = None,
 ) -> str:
-    """Detect HTTP, DNS, or SMTP from payload and conventional ports."""
-    if packet is not None and packet.haslayer(DNS):
-        return "DNS"
-    if src_port in (53, 5353) or dst_port in (53, 5353):
+    """Detect HTTP, DNS, or SMTP using payload structure plus port hints.
+
+    Port numbers are hints only. HTTP requests and SMTP lines are recognized
+    from their payload signature and DNS from a structurally valid message,
+    so all three protocols are still detected on non-standard ports.
+    """
+    ports = {port for port in (src_port, dst_port) if port is not None}
+    dns_layer = _dns_layer_from_packet(packet)
+    if dns_layer is not None:
         return "DNS"
 
     stripped = payload.lstrip()
-    if _looks_like_dns(stripped):
-        return "DNS"
     if _HTTP_REQUEST.match(stripped) or _HTTP_RESPONSE.match(stripped):
         return "HTTP"
-    if src_port in (80, 8080, 8000, 8008, 8888) or dst_port in (80, 8080, 8000, 8008, 8888):
-        if _looks_like_http(stripped):
-            return "HTTP"
-
     if _SMTP_COMMAND.match(stripped) or _SMTP_RESPONSE.match(stripped):
         return "SMTP"
-    if src_port in (25, 465, 587, 2525) or dst_port in (25, 465, 587, 2525):
-        if _looks_like_smtp(stripped):
-            return "SMTP"
-
+    if _looks_like_dns(payload):
+        return "DNS"
+    if ports.intersection(_HTTP_PORTS) and _looks_like_http(stripped):
+        return "HTTP"
+    if ports.intersection(_SMTP_PORTS) and _looks_like_smtp(stripped):
+        return "SMTP"
+    if ports.intersection(_DNS_PORTS):
+        return "DNS"
     return "UNKNOWN"
 
 
@@ -243,21 +250,61 @@ def _looks_like_http(payload: bytes) -> bool:
 
 
 def _looks_like_dns(payload: bytes) -> bool:
-    """Validate enough of a DNS header to avoid port-only false positives."""
-    if len(payload) < 12:
-        return False
+    """Report whether a payload is a structurally valid DNS message."""
+    return _decode_dns(payload) is not None
+
+
+def _decode_dns(payload: bytes) -> DNS | None:
+    """Decode DNS from raw bytes, tolerating the TCP two-byte length prefix."""
+    for candidate in _dns_candidates(payload):
+        try:
+            dns = DNS(candidate)
+        except Exception:
+            continue
+        if _dns_header_is_plausible(dns):
+            return dns
+    return None
+
+
+def _dns_candidates(payload: bytes) -> list[bytes]:
+    """Return payload variants; DNS over TCP carries a two-byte length."""
+    if len(payload) > 2 and int.from_bytes(payload[:2], "big") == len(payload) - 2:
+        return [payload[2:], payload]
+    return [payload]
+
+
+def _dns_layer_from_packet(packet: Packet | None) -> DNS | None:
+    """Return the Scapy DNS layer only when its header is self-consistent."""
+    if packet is None or not packet.haslayer(DNS):
+        return None
+    layer = packet.getlayer(DNS)
+    if layer is None or not _dns_header_is_plausible(layer):
+        return None
+    return layer
+
+
+def _dns_header_is_plausible(dns: DNS) -> bool:
+    """Require header counts to match decoded records so false positives fail."""
     try:
-        dns = DNS(payload)
-        opcode = int(dns.opcode or 0)
-        counts = [
+        counts = (
             int(dns.qdcount or 0),
             int(dns.ancount or 0),
             int(dns.nscount or 0),
             int(dns.arcount or 0),
-        ]
-    except Exception:
+        )
+    except (TypeError, ValueError):
         return False
-    return opcode <= 5 and all(0 <= count <= 100 for count in counts) and any(counts)
+    if int(dns.opcode or 0) > 5:
+        return False
+    if any(count < 0 or count > 100 for count in counts) or not any(counts):
+        return False
+    parsed = (
+        len(_dns_records(dns.qd, DNSQR)),
+        len(_dns_records(dns.an, DNSRR)),
+        len(_dns_records(dns.ns, DNSRR)),
+        len(_dns_records(dns.ar, DNSRR)),
+    )
+    return counts == parsed
 
 
 
@@ -333,14 +380,13 @@ def _parse_text_headers(lines: list[bytes]) -> dict[str, str]:
 
 
 def _parse_dns(payload: bytes, packet: Packet | None) -> dict[str, Any]:
-    dns = packet.getlayer(DNS) if packet is not None and packet.haslayer(DNS) else None
-    if dns is None and payload:
-        try:
-            dns = DNS(payload)
-        except Exception as error:
-            return {"parse_status": "MALFORMED", "error": f"DNS decode failed: {error}"}
-    if dns is None:
+    if not payload:
         return {"parse_status": "MALFORMED", "error": "empty DNS payload"}
+    dns = _dns_layer_from_packet(packet)
+    if dns is None:
+        dns = _decode_dns(payload)
+    if dns is None:
+        return {"parse_status": "MALFORMED", "error": "DNS decode failed"}
 
     questions = _dns_records(dns.qd, DNSQR)
     answers = _dns_records(dns.an, DNSRR)
