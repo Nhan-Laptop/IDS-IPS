@@ -9,6 +9,11 @@ The current code covers:
 - **§2.1.1 Live Capture** from a selected network interface.
 - **§2.1.2 PCAP Import** from a `.pcap` file.
 - **§3 Packet Parsing and Processing Pipeline**.
+- **§4 Non-standard port detection** for HTTP, DNS, and SMTP.
+- **§5 Application protocol detection** with a configurable unknown policy.
+- **§6 Normalized JSON-compatible event structure**.
+- **§7 Error handling** for malformed, unsupported, empty, truncated, and undecodable input.
+- **§8 Logging** of parse results as a JSON Lines file.
 
 Both capture modes use the same packet callback and the same parser. There are not separate parsers for live traffic and PCAP input.
 
@@ -216,6 +221,52 @@ Malformed, truncated, unsupported, or incomplete packets are converted into an e
 
 The event includes an `error` field when parsing cannot be completed.
 
+### Error containment (§7)
+
+The capture loop keeps running for every input the assignment lists:
+
+| Input | Behaviour |
+|---|---|
+| Malformed packet | `MALFORMED` event with an `error` message |
+| Unsupported protocol | `UNSUPPORTED` event, packet is not dropped from the log |
+| Missing header | `UNSUPPORTED` event for a missing IPv4 header, `INCOMPLETE` for a truncated transport header |
+| Empty payload | Event still produced, for example `DNS` with `MALFORMED` on port 53 |
+| Truncated PCAP packet | Readable packets are still processed; the short record is reported as an `INCOMPLETE` event |
+| Undecodable payload | Decoded with replacement characters, or reported as `MALFORMED` instead of raising |
+
+Two extra guards keep the process alive:
+
+- `_parse_safely()` wraps the parser, so an unexpected parser failure becomes an
+  event with `error` `parser failure contained: ...` instead of stopping capture.
+- A PCAP record that Scapy cannot read is reported as an `INCOMPLETE` event and
+  capture ends cleanly with exit code `0`, not with a traceback.
+
+## Parse result log (§8)
+
+Parse results are written as a JSON Lines log, one JSON object per line and one
+line per packet or event:
+
+```bash
+python main.py --pcap test.pcap --output events.jsonl
+python main.py --interface eth0 --output live.jsonl
+```
+
+Without `--output` the same JSON Lines stream is printed to standard output.
+Every line is flushed as soon as the event is produced, so the log stays usable
+while capture is still running. The log is written by `PacketEventWriter`, which
+also records problems that are not packets:
+
+- A truncated PCAP record becomes an `INCOMPLETE` line containing
+  `truncated PCAP packet (captured N of M bytes)`.
+- An unreadable PCAP record becomes an `INCOMPLETE` line containing
+  `unreadable PCAP record (...)`; the remaining packets stop at that point
+  because a PCAP stream cannot be resynchronised.
+- A capture that fails to start, for example a missing interface permission, is
+  appended to the log as a `MALFORMED` line and the process exits with code `1`.
+
+Every logged event, including these error events, passes
+`parsers.validate_event()`.
+
 ## Project structure
 
 ```text
@@ -231,11 +282,15 @@ TEST/
   test_nonstandard_ports.py  Non-standard port detection tests
   test_unknown_policy.py   Unknown protocol mark/skip tests
   test_event_schema.py     Normalized output structure tests
+  test_error_handling.py   Error containment tests (§7)
+  test_jsonl_log.py        JSON Lines log tests (§8)
   capture_cli_results.txt  Capture test output
   pipeline_results.txt     Parser test output
   nonstandard_ports_results.txt  Non-standard port test output
   unknown_policy_results.txt     Unknown policy test output
   event_schema_results.txt       Schema test output
+  error_handling_results.txt     Error handling test output
+  jsonl_log_results.txt          JSON Lines log test output
 docs/
   Bai-tap-01_Packet_Capture_Parser_IDS.pdf
 ```
@@ -266,6 +321,8 @@ The current suite covers:
 - Non-standard port detection for HTTP, DNS over UDP/TCP, and SMTP.
 - Unknown protocol mark/skip configuration.
 - Normalized event schema validation for HTTP, DNS, SMTP, unknown, unsupported, and malformed packets.
+- Error containment for malformed, unsupported, missing-header, empty-payload, truncated-PCAP, and undecodable-payload input.
+- JSON Lines logging of every event, including truncated and unreadable PCAP records and capture failures.
 
 ## Current scope and next steps
 
