@@ -364,6 +364,14 @@ The current suite covers:
 - JSON Lines logging of every event, including truncated and unreadable PCAP records and capture failures.
 - Section 9 mandatory test cases executed end-to-end through the CLI, with captures and logs committed under `TEST/pcap/` and `TEST/output/`.
 
+## Study notes
+
+`knowledge.md` is a Vietnamese study guide for this phase: it explains the
+assignment requirements, the network concepts behind each parser, what every
+function does, the design decisions, the real problems found while building the
+code, and a question-and-answer list for the oral exam.
+
+
 ## Current scope and next steps
 
 This phase parses packets independently. TCP stream reassembly, IP fragmentation reassembly, and the later IDS detection engine are not implemented yet. The next phases can consume the normalized JSON events without accessing Scapy raw packets directly.
