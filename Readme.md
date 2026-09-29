@@ -1,4 +1,16 @@
-# IDS-IPS: Packet Capture & Parser
+# NT204.R11.ANTN — IDS/IPS: Packet Capture & Parser
+
+| | |
+|---|---|
+| Course | NT204 — Hệ thống tìm kiếm, phát hiện và ngăn ngừa xâm nhập (IDS/IPS) |
+| Class code (mã lớp) | NT204.R11.ANTN |
+| Student (họ & tên) | Nguyễn Trọng Nhân |
+| Student ID (MSSV) | 24521236 |
+| Repository | <https://github.com/Nhan-Laptop/NT204.R11.ANTN_Nguyen-Trong-Nhan_24521236> |
+
+This is the single GitHub repository used for the whole NT204 assignment, as the
+submission rules require. The code lives on the `main` branch, which is the default
+branch, and the repository is public.
 
 This repository currently implements the first phase of **Assignment 1 – Packet Capture & Parser for an IDS**.
 
