@@ -1,0 +1,6 @@
+test_T01_url_decoding (TEST.test_decoder.DecoderTests.test_T01_url_decoding) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
