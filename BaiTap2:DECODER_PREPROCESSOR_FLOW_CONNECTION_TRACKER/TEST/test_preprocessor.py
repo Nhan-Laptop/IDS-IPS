@@ -7,6 +7,30 @@ from TEST.common import sample_event
 
 
 class PreprocessorTests(unittest.TestCase):
+    def test_T14_malformed_and_unsupported(self):
+        import json
+        bad_inputs = [None, [], {}, sample_event(src_ip="not-an-ip"),
+                      sample_event(dst_port=65536), sample_event(src_port=True),
+                      sample_event(src_port="9" * 6000), sample_event(timestamp="bad time"),
+                      sample_event(timestamp=float("nan")), sample_event(transport_protocol="ICMP"),
+                      sample_event(packet_length=-1), sample_event(extra=object())]
+        for event in bad_inputs:
+            with self.subTest(event_type=type(event).__name__):
+                result = preprocess_event(event)
+                self.assertEqual(result["preprocess_status"], "invalid")
+                self.assertEqual(result["processing_action"], "mark")
+                self.assertFalse(result["trackable"])
+                self.assertTrue(result["reason"])
+                json.dumps(result, allow_nan=False)
+                self.assertEqual(preprocess_event(event, "skip")["processing_action"], "skip")
+        good = preprocess_event(sample_event())
+        self.assertEqual(good["preprocess_status"], "valid")
+        self.assertTrue(good["trackable"])
+        unknown = preprocess_event(sample_event(application_protocol="TLS"))
+        self.assertEqual(unknown["application_protocol"], "UNKNOWN")
+        self.assertEqual(unknown["preprocess_status"], "partial")
+        self.assertTrue(unknown["trackable"])
+
     def test_T06_missing_optional_fields(self):
         event = {name: value for name, value in sample_event().items() if name in (
             "src_ip", "dst_ip", "src_port", "dst_port", "timestamp", "transport_protocol", "packet_length")}
