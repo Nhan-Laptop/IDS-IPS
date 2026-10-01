@@ -15,7 +15,7 @@ public.
 | Folder | Phase | Documentation |
 |---|---|---|
 | `BaiTap1:Packet_CAPTURER_AND_PARSER/` | Bài tập 1 — Packet Capture & Parser | `Readme.md`, `knowledge.md`, `TEST/TESTCASES.md` |
-| `BaiTap2:DECODER_PREPROCESSOR_FLOW_CONNECTION_TRACKER/` | Bài tập 2 — Decoder, Preprocessor & Flow/Connection Tracker | `README.md`, `plan.md`, `TEST/TESTCASES.md` |
+| `BaiTap2:DECODER_PREPROCESSOR_FLOW_CONNECTION_TRACKER/` | Bài tập 2 — Decoder, Preprocessor & Flow/Connection Tracker | `README.md`, `knowledge.md`, `plan.md`, `TEST/TESTCASES.md` |
 
 Homework 2 builds on Homework 1:
 

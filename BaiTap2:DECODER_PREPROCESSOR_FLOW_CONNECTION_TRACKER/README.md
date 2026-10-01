@@ -28,6 +28,7 @@ decoder.py         Decode HTTP text and SMTP/MIME bodies
 preprocessor.py    Validate and normalize one event
 flow_tracker.py    Group events into flows, keep states and statistics
 plan.md            The simple plan for this phase
+knowledge.md       Vietnamese study guide for this phase
 TEST/              Tests, per-case evidence and the case mapping document
 docs/              Assignment PDF
 ```
