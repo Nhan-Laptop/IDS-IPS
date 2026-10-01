@@ -1,0 +1,29 @@
+/home/nhanlaptop/miniconda3/lib/python3.14/site-packages/scapy/layers/tls/crypto/groups.py:25: CryptographyDeprecationWarning: Diffie-Hellman over finite fields (FFDH) is deprecated and support will be removed in a future release. Use a more modern key exchange algorithm.
+  from cryptography.hazmat.primitives.asymmetric.dh import DHParameterNumbers
+test_T01_url_decoding (test_decoder.DecoderTests.test_T01_url_decoding) ... ok
+test_T02_html_entities (test_decoder.DecoderTests.test_T02_html_entities) ... ok
+test_T03_mime_base64_and_qp (test_decoder.DecoderTests.test_T03_mime_base64_and_qp) ... ok
+test_T04_invalid_bytes_continue (test_decoder.DecoderTests.test_T04_invalid_bytes_continue) ... ok
+test_T07_tcp_handshake (test_flow_tracker.FlowTests.test_T07_tcp_handshake) ... ok
+test_T08_bidirectional_flow (test_flow_tracker.FlowTests.test_T08_bidirectional_flow) ... ok
+test_T09_tcp_close_and_reset (test_flow_tracker.FlowTests.test_T09_tcp_close_and_reset) ... ok
+test_T10_udp_dns_query_response (test_flow_tracker.FlowTests.test_T10_udp_dns_query_response) ... ok
+test_T11_concurrent_flows (test_flow_tracker.FlowTests.test_T11_concurrent_flows) ... ok
+test_T12_idle_timeout_and_cleanup (test_flow_tracker.FlowTests.test_T12_idle_timeout_and_cleanup) ... ok
+test_T13_statistics (test_flow_tracker.FlowTests.test_T13_statistics) ... ok
+test_bad_bytes_then_mime_pcap (test_main.RunnerTests.test_bad_bytes_then_mime_pcap) ... ok
+test_bad_packet_policy_and_unreadable_input (test_main.RunnerTests.test_bad_packet_policy_and_unreadable_input) ... WARNING: getmacbyip failed on [Errno 1] Operation not permitted
+WARNING: MAC address to reach destination not found. Using broadcast.
+WARNING: getmacbyip failed on [Errno 1] Operation not permitted
+WARNING: MAC address to reach destination not found. Using broadcast.
+ok
+test_end_to_end_http_tcp (test_main.RunnerTests.test_end_to_end_http_tcp) ... ok
+test_parser_reuse_smoke (test_main.RunnerTests.test_parser_reuse_smoke) ... ok
+test_T05_normalization (test_preprocessor.PreprocessorTests.test_T05_normalization) ... ok
+test_T06_missing_optional_fields (test_preprocessor.PreprocessorTests.test_T06_missing_optional_fields) ... ok
+test_T14_malformed_and_unsupported (test_preprocessor.PreprocessorTests.test_T14_malformed_and_unsupported) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 21.988s
+
+OK
