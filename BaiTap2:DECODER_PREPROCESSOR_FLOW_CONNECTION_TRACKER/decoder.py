@@ -1,5 +1,9 @@
 """Decode representations without overwriting the original application fields."""
 
+import base64
+from email import policy
+from email.parser import BytesParser
+import quopri
 from email.message import Message
 import html
 import re
@@ -97,6 +101,77 @@ def _http(result, raw_payload, max_size, problems):
         result["decoded_body"] = body
 
 
+def _transfer(data, encoding, problems):
+    if encoding == "base64":
+        try:
+            return base64.b64decode(b"".join(data.split()), validate=True)
+        except ValueError:
+            problems.append("invalid MIME Base64")
+            return data
+    if encoding == "quoted-printable":
+        if re.search(br"=(?![0-9a-fA-F]{2}|\r?\n)", data):
+            problems.append("invalid MIME Quoted-Printable")
+        return quopri.decodestring(data)
+    if encoding not in ("", "7bit", "8bit", "binary"):
+        problems.append(f"unsupported MIME encoding: {encoding}")
+    return data
+
+
+def _mime(result, raw_payload, max_size, problems):
+    """Handle complete MIME messages or events with MIME headers and a body."""
+    message = None
+    if raw_payload:
+        candidate = _bounded(raw_payload, max_size, problems)
+        if candidate.upper().startswith(b"DATA\r\n"):
+            candidate = candidate[6:]
+        if candidate.endswith(b"\r\n.\r\n"):
+            candidate = candidate[:-5]
+            candidate = re.sub(br"(?m)^\.\.", b".", candidate)
+        header_block = re.split(br"\r?\n\r?\n", candidate, maxsplit=1)[0]
+        if re.search(br"(?im)^(content-type|content-transfer-encoding|mime-version):", header_block):
+            message = BytesParser(policy=policy.default).parsebytes(candidate)
+    headers = _headers(result.get("mime_headers", result.get("headers")), problems)
+    if message is None:
+        if not any(name in headers for name in ("content-type", "content-transfer-encoding", "mime-version")):
+            return False
+        body = result.get("body")
+        if not isinstance(body, (str, bytes)):
+            problems.append("MIME body missing or invalid")
+            return True
+        body = _bounded(body, max_size, problems)
+        if isinstance(body, str):
+            body = body.encode("utf-8")
+        header_bytes = "\r\n".join(f"{name}: {value}" for name, value in headers.items()).encode("utf-8")
+        message = BytesParser(policy=policy.default).parsebytes(header_bytes + b"\r\n\r\n" + body)
+
+    result["mime_parts"] = []
+    for part in message.walk():
+        if part.is_multipart():
+            continue
+        if part.get_content_maintype() != "text":
+            continue  # binary attachments are not character-decoded
+        encoding = (part.get("Content-Transfer-Encoding") or "").strip().lower()
+        charset = part.get_content_charset() or "utf-8"
+        if encoding in ("base64", "quoted-printable"):
+            encoded = part.get_payload().encode("ascii", errors="surrogateescape")
+            data = _transfer(encoded, encoding, problems)
+        else:
+            data = part.get_payload(decode=True) or b""
+            data = _transfer(data, encoding, problems)
+        if part.defects:
+            problems.append("malformed MIME part")
+        text = _text(_bounded(data, max_size, problems), charset, problems)
+        result["mime_parts"].append({"content_type": part.get_content_type(),
+                                     "charset": charset, "transfer_encoding": encoding,
+                                     "decoded_body": text})
+    if not result["mime_parts"]:
+        problems.append("no supported text MIME part")
+    result["decoded_body"] = "\n".join(part["decoded_body"] for part in result["mime_parts"])
+    if result.get("application_protocol", "UNKNOWN") == "UNKNOWN":
+        result["application_protocol"] = "SMTP"
+    return True
+
+
 def decode_event(event, raw_payload=None, max_size=65536):
     """raw_payload is the original complete transport payload, when available."""
     if not isinstance(event, dict):
@@ -114,6 +189,8 @@ def decode_event(event, raw_payload=None, max_size=65536):
         if isinstance(protocol, str) and protocol.strip().upper() == "HTTP":
             handled = True
             _http(result, raw_payload, max_size, problems)
+        elif isinstance(protocol, str) and protocol.strip().upper() in ("SMTP", "UNKNOWN"):
+            handled = _mime(result, raw_payload, max_size, problems)
     except Exception as error:
         problems.append(f"decode failed: {error}")
     result["decode_status"] = "PARTIAL" if problems else ("OK" if handled else "SKIPPED")
