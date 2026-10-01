@@ -10,12 +10,40 @@ def new_tracker(tcp_timeout=120, udp_timeout=30):
     for value in (tcp_timeout, udp_timeout):
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value <= 0:
             raise ValueError("flow timeouts must be finite positive numbers")
-    return {"active_flows": {}, "next_id": 1, "tcp_timeout": tcp_timeout, "udp_timeout": udp_timeout}
+    return {"active_flows": {}, "next_id": 1, "tcp_timeout": tcp_timeout,
+            "udp_timeout": udp_timeout, "_clock": None}
 
 
 def flow_snapshot(flow):
     """Private bookkeeping does not belong in the JSON summary."""
     return deepcopy({name: value for name, value in flow.items() if not name.startswith("_")})
+
+
+def expire_flows(tracker, now):
+    """A PCAP uses capture time, not the speed at which the file is read."""
+    try:
+        clock = parse_timestamp(now).timestamp()
+    except (TypeError, ValueError, OverflowError, OSError):
+        return []
+    tracker["_clock"] = max(clock, tracker["_clock"]) if tracker["_clock"] is not None else clock
+    completed = []
+    for key, flow in list(tracker["active_flows"].items()):
+        timeout = tracker["tcp_timeout"] if flow["protocol"] == "TCP" else tracker["udp_timeout"]
+        if tracker["_clock"] - flow["_last_seconds"] >= timeout:
+            flow["state"] = "CLOSED"
+            flow["close_reason"] = "idle_timeout"
+            completed.append(flow_snapshot(flow))
+            del tracker["active_flows"][key]
+    return completed
+
+
+def finish_flows(tracker, reason="eof"):
+    completed = []
+    for flow in tracker["active_flows"].values():
+        flow["close_reason"] = reason
+        completed.append(flow_snapshot(flow))
+    tracker["active_flows"].clear()
+    return completed
 
 
 def _new_flow(tracker, event, now):
@@ -77,8 +105,9 @@ def track_event(tracker, event):
     policy = "skip" if isinstance(event, dict) and event.get("processing_action") == "skip" else "mark"
     result = preprocess_event(event, policy)
     result.update(flow_id=None, direction=None, flow_state=None, track_status="SKIPPED")
+    completed = expire_flows(tracker, result["timestamp"])
     if not result["trackable"]:
-        return result, []
+        return result, completed
     now = parse_timestamp(result["timestamp"]).timestamp()
     key = (result["src_ip"], result["dst_ip"], result["src_port"], result["dst_port"], result["transport_protocol"])
     reverse = (key[1], key[0], key[3], key[2], key[4])
@@ -116,7 +145,6 @@ def track_event(tracker, event):
         _tcp_handshake(flow, result, direction)
         close_reason = _tcp_close(flow, result, direction)
     result.update(flow_id=flow["flow_id"], direction=direction, flow_state=flow["state"], track_status="OK")
-    completed = []
     if close_reason:
         flow["close_reason"] = close_reason
         completed.append(flow_snapshot(flow))
