@@ -1,0 +1,21 @@
+Homework 2 evidence
+
+http_request: 9 events, 1 flows
+  flow_1 TCP/HTTP CLOSED packets=9 bytes=756 reason=tcp_fin
+
+smtp_mime: 2 events, 1 flows
+  flow_1 TCP/SMTP NEW packets=2 bytes=333 reason=eof
+
+udp_dns: 2 events, 1 flows
+  flow_1 UDP/DNS ACTIVE packets=2 bytes=141 reason=eof
+
+bad_then_mime: 3 events, 2 flows
+  flow_1 TCP/HTTP NEW packets=1 bytes=124 reason=eof
+  flow_2 TCP/SMTP NEW packets=2 bytes=333 reason=eof
+  packet 1: decode=PARTIAL preprocess=partial reason=invalid utf-8 bytes
+
+concurrent_flows: 5 events, 4 flows
+  flow_1 TCP/UNKNOWN CLOSED packets=1 bytes=54 reason=idle_timeout
+  flow_2 TCP/UNKNOWN CLOSED packets=1 bytes=54 reason=idle_timeout
+  flow_3 TCP/HTTP NEW packets=2 bytes=141 reason=eof
+  flow_4 TCP/HTTP NEW packets=1 bytes=91 reason=eof
