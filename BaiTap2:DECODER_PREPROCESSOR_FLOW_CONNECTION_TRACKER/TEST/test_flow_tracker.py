@@ -7,6 +7,34 @@ from TEST.common import sample_event
 
 
 class FlowTests(unittest.TestCase):
+    def test_T13_statistics(self):
+        tracker = new_tracker()
+        inputs = [sample_event(tcp_flags=["SYN"], packet_length=60),
+                  sample_event(reverse=True, tcp_flags=["SYN", "ACK"], packet_length=64, timestamp=1700000000.5),
+                  sample_event(tcp_flags=["ACK"], packet_length=52, timestamp=1700000001),
+                  sample_event(tcp_flags=["PSH", "ACK"], packet_length=100, payload_length=48,
+                               application_protocol="HTTP", timestamp=1700000002.5),
+                  sample_event(reverse=True, tcp_flags=["ACK"], packet_length=52, timestamp=1700000003),
+                  sample_event(tcp_flags=["ACK"], packet_length=53, timestamp=1700000001.5)]
+        for event in inputs:
+            track_event(tracker, event)
+        flow = flow_snapshot(next(iter(tracker["active_flows"].values())))
+        self.assertEqual(flow["packet_count"], 6)
+        self.assertEqual(flow["byte_count"], 381)
+        self.assertEqual(flow["forward_packet_count"], 4)
+        self.assertEqual(flow["backward_packet_count"], 2)
+        self.assertEqual(flow["forward_byte_count"], 265)
+        self.assertEqual(flow["backward_byte_count"], 116)
+        self.assertEqual([flow[f"{flag}_count"] for flag in ("SYN", "ACK", "FIN", "RST")], [2, 5, 0, 0])
+        self.assertEqual(flow["start_time"], "2023-11-14T22:13:20+00:00")
+        self.assertEqual(flow["last_seen"], "2023-11-14T22:13:23+00:00")
+        self.assertEqual(flow["duration"], 3)
+        self.assertEqual(flow["application_protocol"], "HTTP")
+        self.assertEqual(flow["state"], "ESTABLISHED")
+        self.assertFalse(any(name.startswith("_") for name in flow))
+        track_event(tracker, sample_event())
+        self.assertEqual(flow["packet_count"], 6)  # a saved snapshot does not change
+
     def test_T09_tcp_close_and_reset(self):
         tracker = new_tracker()
         for event in [sample_event(tcp_flags=["SYN"]),

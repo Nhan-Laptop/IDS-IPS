@@ -1,0 +1,6 @@
+test_T13_statistics (TEST.test_flow_tracker.FlowTests.test_T13_statistics) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+OK
