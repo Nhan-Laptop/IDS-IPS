@@ -24,6 +24,53 @@ def tcp_packet(flags, timestamp, reverse=False, payload=b"", seq=100, ack=0):
 
 
 class RunnerTests(unittest.TestCase):
+    def test_bad_packet_policy_and_unreadable_input(self):
+        good = tcp_packet("PA", 1700000000, payload=b"GET / HTTP/1.1\r\nHost: a.test\r\n\r\n")
+        broken = Ether() / IP(src="10.0.0.9", dst="10.0.0.8") / TCP(sport=1, dport=2)
+        broken[IP].ihl = 3
+        broken.time = 1700000001
+        marked, flows = self.run_pcap([broken, good])
+        self.assertEqual([event["preprocess_status"] for event in marked], ["invalid", "valid"])
+        self.assertEqual(marked[0]["processing_action"], "mark")
+        self.assertIsNone(marked[0]["flow_id"])
+        self.assertEqual(marked[0]["transport_protocol"], "UNKNOWN")
+        self.assertEqual(len(flows), 1)
+        skipped, flows = self.run_pcap([broken, good], "--invalid-policy", "skip")
+        self.assertEqual(len(skipped), 1)
+        self.assertEqual(skipped[0]["packet_id"], 2)
+        self.assertEqual(skipped[0]["processing_action"], "keep")
+        self.assertEqual(len(flows), 1)
+        self.assertEqual(flows[0]["close_reason"], "eof")
+        # A cut trailing record is reported, then the readable flow is exported.
+        with tempfile.TemporaryDirectory() as directory:
+            directory = Path(directory)
+            pcap, events, flows_path = (directory / "cut.pcap", directory / "e.jsonl",
+                                       directory / "f.jsonl")
+            wrpcap(str(pcap), [good, good])
+            pcap.write_bytes(pcap.read_bytes()[:-10])
+            result = subprocess.run([sys.executable, "-B", str(Path(main.__file__)), "--pcap",
+                                     str(pcap), "--output", str(events), "--flows-output",
+                                     str(flows_path), "--udp-timeout", "1", "--tcp-timeout", "1"],
+                                    capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            reported = [json.loads(line) for line in events.read_text().splitlines()]
+            self.assertEqual(reported[0]["packet_id"], 1)
+            # The cut trailing record is reported, then the readable flow is still exported.
+            self.assertEqual(reported[-1]["parse_status"], "INCOMPLETE")
+            self.assertIn("truncated", reported[-1]["error"])
+            self.assertEqual(len([json.loads(line) for line in flows_path.read_text().splitlines()]), 1)
+        for bad_options in (("--tcp-timeout", "0"), ("--udp-timeout", "nan"),
+                            ("--max-decode-size", "0"), ("--invalid-policy", "drop")):
+            with self.subTest(options=bad_options):
+                with tempfile.TemporaryDirectory() as directory:
+                    pcap = Path(directory) / "in.pcap"
+                    wrpcap(str(pcap), [good])
+                    result = subprocess.run([sys.executable, "-B", str(Path(main.__file__)),
+                                             "--pcap", str(pcap), "--output", str(Path(directory) / "e.jsonl"),
+                                             "--flows-output", str(Path(directory) / "f.jsonl"),
+                                             *bad_options], capture_output=True, text=True, timeout=15)
+                    self.assertEqual(result.returncode, 2)
+
     def test_bad_bytes_then_mime_pcap(self):
         bad = tcp_packet("PA", 1700000000, payload=(
             b"HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\n\r\ninvalid: \xff"))
