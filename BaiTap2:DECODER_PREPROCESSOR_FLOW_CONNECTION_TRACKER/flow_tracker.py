@@ -32,6 +32,8 @@ def _new_flow(tracker, event, now):
         "state": "NEW" if event["transport_protocol"] == "TCP" else "ACTIVE",
         "_start_seconds": now, "_last_seconds": now,
         "_syn_direction": None, "_synack_seen": False,
+        "_fin_seen": {"forward": False, "backward": False},
+        "_fin_acked": {"forward": False, "backward": False},
     }
     tracker["next_id"] += 1
     return flow
@@ -53,6 +55,23 @@ def _tcp_handshake(flow, event, direction):
         flow["state"] = "ESTABLISHED"
 
 
+def _tcp_close(flow, event, direction):
+    flags = event["tcp_flags"]
+    if "RST" in flags:
+        flow["state"] = "RESET"
+        return "tcp_rst"
+    other = "backward" if direction == "forward" else "forward"
+    if "ACK" in flags and flow["_fin_seen"][other]:
+        flow["_fin_acked"][other] = True
+    if "FIN" in flags:
+        flow["_fin_seen"][direction] = True
+        flow["state"] = "CLOSING"
+    if all(flow["_fin_seen"].values()) and all(flow["_fin_acked"].values()):
+        flow["state"] = "CLOSED"
+        return "tcp_fin"
+    return None
+
+
 def track_event(tracker, event):
     """Return (enriched event, completed summaries). Invalid events never create flows."""
     policy = "skip" if isinstance(event, dict) and event.get("processing_action") == "skip" else "mark"
@@ -64,6 +83,7 @@ def track_event(tracker, event):
     key = (result["src_ip"], result["dst_ip"], result["src_port"], result["dst_port"], result["transport_protocol"])
     reverse = (key[1], key[0], key[3], key[2], key[4])
     active = tracker["active_flows"]
+    flow_key = reverse if key not in active and reverse in active else key
     if key in active:
         flow = active[key]
         direction = "forward"
@@ -88,10 +108,17 @@ def track_event(tracker, event):
     flow[f"{direction}_byte_count"] += result["packet_length"]
     if flow["application_protocol"] == "UNKNOWN" and result["application_protocol"] != "UNKNOWN":
         flow["application_protocol"] = result["application_protocol"]
+    close_reason = None
     if flow["protocol"] == "TCP":
         for flag in ("SYN", "ACK", "FIN", "RST"):
             if flag in result["tcp_flags"]:
                 flow[f"{flag}_count"] += 1
         _tcp_handshake(flow, result, direction)
+        close_reason = _tcp_close(flow, result, direction)
     result.update(flow_id=flow["flow_id"], direction=direction, flow_state=flow["state"], track_status="OK")
-    return result, []
+    completed = []
+    if close_reason:
+        flow["close_reason"] = close_reason
+        completed.append(flow_snapshot(flow))
+        del active[flow_key]
+    return result, completed
