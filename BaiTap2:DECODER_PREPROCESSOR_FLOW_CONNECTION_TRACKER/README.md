@@ -106,7 +106,8 @@ never lost:
   counts, TCP flag counts and `state`.
 - Idle flows expire using packet timestamps (capture time, not reading speed)
   and are written as `CLOSED` with `close_reason` `idle_timeout`. Flows still
-  active when the file ends are written with `close_reason` `eof`.
+  active when the file ends are written with `close_reason` `eof`; their `state`
+  stays what the captured packets showed, for example `ESTABLISHED` or `ACTIVE`.
 
 ### Byte count choice
 
