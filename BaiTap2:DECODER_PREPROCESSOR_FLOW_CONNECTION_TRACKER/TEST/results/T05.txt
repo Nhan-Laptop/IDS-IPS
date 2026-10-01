@@ -1,0 +1,6 @@
+test_T05_normalization (TEST.test_preprocessor.PreprocessorTests.test_T05_normalization) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
