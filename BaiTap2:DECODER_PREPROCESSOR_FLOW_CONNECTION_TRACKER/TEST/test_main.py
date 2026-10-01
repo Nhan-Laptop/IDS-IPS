@@ -24,6 +24,33 @@ def tcp_packet(flags, timestamp, reverse=False, payload=b"", seq=100, ack=0):
 
 
 class RunnerTests(unittest.TestCase):
+    def test_bad_bytes_then_mime_pcap(self):
+        bad = tcp_packet("PA", 1700000000, payload=(
+            b"HTTP/1.1 200 OK\r\nContent-Type: text/plain; charset=utf-8\r\n\r\ninvalid: \xff"))
+        mime1 = tcp_packet("PA", 1700000001, payload=(
+            b"MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n"
+            b"Content-Transfer-Encoding: base64\r\n\r\nSGVsbG8="))
+        mime2 = tcp_packet("PA", 1700000002, payload=(
+            b"MIME-Version: 1.0\r\nContent-Type: text/plain; charset=utf-8\r\n"
+            b"Content-Transfer-Encoding: quoted-printable\r\n\r\nXin ch=C3=A0o"))
+        for packet in (mime1, mime2):
+            packet[TCP].sport = 40001
+            packet[TCP].dport = 25
+        events, flows = self.run_pcap([bad, mime1, mime2])
+        self.assertEqual(len(events), 3)
+        self.assertEqual(events[0]["decode_status"], "PARTIAL")
+        self.assertEqual(events[0]["preprocess_status"], "partial")
+        self.assertEqual(events[1]["decoded_body"], "Hello")
+        self.assertEqual(events[2]["decoded_body"], "Xin chào")
+        self.assertEqual(events[1]["application_protocol"], "SMTP")
+        self.assertEqual(events[1]["flow_id"], events[2]["flow_id"])
+        self.assertNotEqual(events[0]["flow_id"], events[1]["flow_id"])
+        self.assertEqual(len(flows), 2)
+        self.assertTrue(all(flow["close_reason"] == "eof" for flow in flows))
+        limited, _ = self.run_pcap([bad, mime1, mime2], "--max-decode-size", "16")
+        self.assertEqual(len(limited), 3)
+        self.assertTrue(all(event["decode_status"] == "PARTIAL" for event in limited))
+
     def test_end_to_end_http_tcp(self):
         form = b"name=Alice+Smith&literal=%2B"
         request = (b"POST /Search?q=%27%20OR%201%3D1 HTTP/1.1\r\nHost: EXAMPLE.TEST\r\n"
