@@ -1,0 +1,6 @@
+test_T06_missing_optional_fields (TEST.test_preprocessor.PreprocessorTests.test_T06_missing_optional_fields) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK

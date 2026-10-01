@@ -7,6 +7,21 @@ from TEST.common import sample_event
 
 
 class PreprocessorTests(unittest.TestCase):
+    def test_T06_missing_optional_fields(self):
+        event = {name: value for name, value in sample_event().items() if name in (
+            "src_ip", "dst_ip", "src_port", "dst_port", "timestamp", "transport_protocol", "packet_length")}
+        result = preprocess_event(event)
+        self.assertTrue(result["trackable"])
+        self.assertEqual(result["preprocess_status"], "partial")
+        for field in ("packet_id", "body", "http_target", "tcp_sequence", "payload_length"):
+            self.assertIsNone(result[field], field)
+        for field in ("tcp_flags", "dns_questions", "dns_answers"):
+            self.assertEqual(result[field], [], field)
+        self.assertEqual(result["headers"], {})
+        self.assertEqual(result["application_protocol"], "UNKNOWN")
+        explicit_null = dict(event, tcp_flags=None, dns_questions=None, dns_answers=None, headers=None)
+        self.assertEqual(preprocess_event(explicit_null)["dns_questions"], [])
+
     def test_T05_normalization(self):
         event = sample_event(
             transport_protocol=" tcp ", application_protocol=" http ", network_protocol=" ipv4 ",
