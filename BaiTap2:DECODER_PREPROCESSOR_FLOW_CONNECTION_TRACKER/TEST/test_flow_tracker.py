@@ -7,6 +7,34 @@ from TEST.common import sample_event
 
 
 class FlowTests(unittest.TestCase):
+    def test_T09_tcp_close_and_reset(self):
+        tracker = new_tracker()
+        for event in [sample_event(tcp_flags=["SYN"]),
+                      sample_event(reverse=True, tcp_flags=["SYN", "ACK"]),
+                      sample_event(tcp_flags=["ACK"])]:
+            first, _ = track_event(tracker, event)
+        for event in [sample_event(tcp_flags=["FIN", "ACK"]),
+                      sample_event(reverse=True, tcp_flags=["ACK"]),
+                      sample_event(reverse=True, tcp_flags=["FIN", "ACK"])]:
+            result, completed = track_event(tracker, event)
+            self.assertEqual(result["flow_state"], "CLOSING")
+            self.assertEqual(completed, [])
+            self.assertEqual(result["flow_id"], first["flow_id"])
+        last, completed = track_event(tracker, sample_event(tcp_flags=["ACK"]))
+        self.assertEqual(last["flow_state"], "CLOSED")
+        self.assertEqual(len(completed), 1)
+        self.assertEqual(completed[0]["close_reason"], "tcp_fin")
+        self.assertEqual(completed[0]["packet_count"], 7)
+        self.assertEqual(completed[0]["FIN_count"], 2)
+        self.assertEqual(tracker["active_flows"], {})
+        fresh, _ = track_event(tracker, sample_event(tcp_flags=["SYN"]))
+        self.assertNotEqual(fresh["flow_id"], first["flow_id"])
+        reset, completed = track_event(tracker, sample_event(reverse=True, tcp_flags=["RST", "ACK"]))
+        self.assertEqual(reset["flow_state"], "RESET")
+        self.assertEqual(completed[0]["RST_count"], 1)
+        self.assertEqual(completed[0]["close_reason"], "tcp_rst")
+        self.assertEqual(tracker["active_flows"], {})
+
     def test_T07_tcp_handshake(self):
         tracker = new_tracker()
         inputs = [sample_event(tcp_flags=["SYN"]),
