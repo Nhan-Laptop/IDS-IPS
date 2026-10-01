@@ -6,6 +6,25 @@ from decoder import decode_event
 
 
 class DecoderTests(unittest.TestCase):
+    def test_T04_invalid_bytes_continue(self):
+        event = {"application_protocol": "HTTP", "headers": {"Content-Type": "text/plain; charset=utf-8"},
+                 "body": "already replaced: �"}
+        bad = decode_event(event, b"HTTP/1.1 200 OK\r\n\r\ninvalid: \xff\xfe")
+        self.assertEqual(bad["decode_status"], "PARTIAL")
+        self.assertIn("invalid utf-8", bad["decode_reason"])
+        self.assertEqual(bad["decoded_body"], "invalid: ��")
+        good = decode_event(event, b"HTTP/1.1 200 OK\r\n\r\nHello")
+        self.assertEqual(good["decode_status"], "OK")
+        self.assertEqual(good["decoded_body"], "Hello")
+        ascii_event = dict(event, headers={"Content-Type": "text/plain; charset=ascii"})
+        self.assertEqual(decode_event(ascii_event, b"HTTP/1.1 200 OK\r\n\r\n\xff")["decode_status"], "PARTIAL")
+        for encoding, body in [("base64", "not!base64"), ("quoted-printable", "bad=ZZ")]:
+            mime = {"application_protocol": "SMTP", "body": body,
+                    "headers": {"Content-Transfer-Encoding": encoding}}
+            self.assertEqual(decode_event(mime)["decode_status"], "PARTIAL")
+        escaped = decode_event({"application_protocol": "HTTP", "http_target": "/%FF"})
+        self.assertEqual(escaped["decode_status"], "PARTIAL")
+
     def test_T03_mime_base64_and_qp(self):
         for encoding, body, expected in [
                 ("base64", "SGVsbG8=", "Hello"),
