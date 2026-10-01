@@ -7,6 +7,19 @@ from TEST.common import sample_event
 
 
 class FlowTests(unittest.TestCase):
+    def test_T11_concurrent_flows(self):
+        tracker = new_tracker()
+        inputs = [sample_event(), sample_event(src_port=40001),
+                  sample_event(dst_ip="10.0.0.3"), sample_event(transport_protocol="UDP")]
+        results = [track_event(tracker, event)[0] for event in inputs]
+        self.assertEqual(len({event["flow_id"] for event in results}), 4)
+        self.assertEqual(len(tracker["active_flows"]), 4)
+        response, _ = track_event(tracker, sample_event(reverse=True))
+        self.assertEqual(response["flow_id"], results[0]["flow_id"])
+        self.assertEqual(len(tracker["active_flows"]), 4)
+        counts = sorted(flow["packet_count"] for flow in tracker["active_flows"].values())
+        self.assertEqual(counts, [1, 1, 1, 2])
+
     def test_T10_udp_dns_query_response(self):
         from scapy.all import DNS, DNSQR, DNSRR, IP, UDP
         from main import packet_to_event
