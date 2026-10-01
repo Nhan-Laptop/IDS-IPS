@@ -28,7 +28,7 @@ class RunnerTests(unittest.TestCase):
                     [json.loads(line) for line in flows.read_text().splitlines()])
 
     def test_parser_reuse_smoke(self):
-        packet = Ether() / IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=40000, dport=80) / Raw(
+        packet = Ether(src="02:00:00:00:00:01", dst="02:00:00:00:00:02") / IP(src="10.0.0.1", dst="10.0.0.2") / TCP(sport=40000, dport=80) / Raw(
             b"GET /hello HTTP/1.1\r\nHost: example.test\r\n\r\n")
         packet.time = 1700000000
         event, payload = main.packet_to_event(packet, 1)
