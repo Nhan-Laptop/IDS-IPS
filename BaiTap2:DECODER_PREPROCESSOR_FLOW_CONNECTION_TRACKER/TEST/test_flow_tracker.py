@@ -2,11 +2,43 @@
 
 import unittest
 
-from flow_tracker import flow_snapshot, new_tracker, track_event
+from flow_tracker import expire_flows, finish_flows, flow_snapshot, new_tracker, track_event
 from TEST.common import sample_event
 
 
 class FlowTests(unittest.TestCase):
+    def test_T12_idle_timeout_and_cleanup(self):
+        tracker = new_tracker(tcp_timeout=10, udp_timeout=5)
+        tcp, _ = track_event(tracker, sample_event())
+        udp, _ = track_event(tracker, sample_event(transport_protocol="UDP"))
+        self.assertEqual(expire_flows(tracker, 1700000004), [])
+        done = expire_flows(tracker, 1700000005)
+        self.assertEqual([flow["flow_id"] for flow in done], [udp["flow_id"]])
+        self.assertEqual(done[0]["close_reason"], "idle_timeout")
+        self.assertEqual(done[0]["state"], "CLOSED")
+        self.assertEqual(done[0]["duration"], 0)  # expiration does not fabricate packet time
+        self.assertEqual(len(tracker["active_flows"]), 1)
+        done = expire_flows(tracker, 1700000010)
+        self.assertEqual(done[0]["flow_id"], tcp["flow_id"])
+        self.assertEqual(tracker["active_flows"], {})
+        fresh, _ = track_event(tracker, sample_event(timestamp=1700000020))
+        self.assertNotEqual(fresh["flow_id"], tcp["flow_id"])
+        final = finish_flows(tracker)
+        self.assertEqual(final[0]["close_reason"], "eof")
+        self.assertEqual(tracker["active_flows"], {})
+        self.assertEqual(finish_flows(tracker), [])
+        # Expire before matching a new packet with the same tuple.
+        first, _ = track_event(tracker, sample_event(timestamp=1700000030))
+        later, done = track_event(tracker, sample_event(timestamp=1700000040))
+        self.assertNotEqual(first["flow_id"], later["flow_id"])
+        self.assertEqual(done[0]["flow_id"], first["flow_id"])
+        self.assertEqual(expire_flows(tracker, "bad timestamp"), [])
+        for bad in (0, -1, float("nan"), float("inf"), True):
+            with self.assertRaises(ValueError):
+                new_tracker(tcp_timeout=bad)
+            with self.assertRaises(ValueError):
+                new_tracker(udp_timeout=bad)
+
     def test_T13_statistics(self):
         tracker = new_tracker()
         inputs = [sample_event(tcp_flags=["SYN"], packet_length=60),

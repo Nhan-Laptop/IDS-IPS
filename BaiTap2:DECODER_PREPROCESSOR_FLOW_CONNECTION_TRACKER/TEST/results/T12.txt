@@ -1,0 +1,6 @@
+test_T12_idle_timeout_and_cleanup (TEST.test_flow_tracker.FlowTests.test_T12_idle_timeout_and_cleanup) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK
