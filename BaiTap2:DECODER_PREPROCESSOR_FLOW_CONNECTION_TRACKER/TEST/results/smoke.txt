@@ -1,0 +1,14 @@
+/home/nhanlaptop/miniconda3/lib/python3.14/site-packages/scapy/layers/tls/crypto/groups.py:25: CryptographyDeprecationWarning: Diffie-Hellman over finite fields (FFDH) is deprecated and support will be removed in a future release. Use a more modern key exchange algorithm.
+  from cryptography.hazmat.primitives.asymmetric.dh import DHParameterNumbers
+test_parser_reuse_smoke (TEST.test_main.RunnerTests.test_parser_reuse_smoke) ... WARNING: getmacbyip failed on [Errno 1] Operation not permitted
+WARNING: MAC address to reach destination not found. Using broadcast.
+WARNING: getmacbyip failed on [Errno 1] Operation not permitted
+WARNING: MAC address to reach destination not found. Using broadcast.
+WARNING: more getmacbyip failed on [Errno 1] Operation not permitted
+WARNING: more MAC address to reach destination not found. Using broadcast.
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.592s
+
+OK
