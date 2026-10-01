@@ -1,0 +1,8 @@
+test_T10_udp_dns_query_response (TEST.test_flow_tracker.FlowTests.test_T10_udp_dns_query_response) ... /home/nhanlaptop/miniconda3/lib/python3.14/site-packages/scapy/layers/tls/crypto/groups.py:25: CryptographyDeprecationWarning: Diffie-Hellman over finite fields (FFDH) is deprecated and support will be removed in a future release. Use a more modern key exchange algorithm.
+  from cryptography.hazmat.primitives.asymmetric.dh import DHParameterNumbers
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.565s
+
+OK
