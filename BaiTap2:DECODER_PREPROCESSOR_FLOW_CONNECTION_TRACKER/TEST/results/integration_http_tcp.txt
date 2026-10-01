@@ -1,0 +1,8 @@
+/home/nhanlaptop/miniconda3/lib/python3.14/site-packages/scapy/layers/tls/crypto/groups.py:25: CryptographyDeprecationWarning: Diffie-Hellman over finite fields (FFDH) is deprecated and support will be removed in a future release. Use a more modern key exchange algorithm.
+  from cryptography.hazmat.primitives.asymmetric.dh import DHParameterNumbers
+test_end_to_end_http_tcp (TEST.test_main.RunnerTests.test_end_to_end_http_tcp) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.562s
+
+OK
