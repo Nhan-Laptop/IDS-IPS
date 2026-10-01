@@ -6,6 +6,19 @@ from decoder import decode_event
 
 
 class DecoderTests(unittest.TestCase):
+    def test_T02_html_entities(self):
+        event = {"application_protocol": "HTTP", "headers": {"Content-Type": "text/html"},
+                 "body": "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#39;"}
+        result = decode_event(event)
+        self.assertEqual(result["decoded_body"], '<script>alert("x")</script> & \u0027')
+        self.assertEqual(result["body"], event["body"])
+        self.assertEqual(result["decode_status"], "OK")
+        not_html = dict(event, headers={"Content-Type": "application/json"})
+        self.assertEqual(decode_event(not_html)["decoded_body"], event["body"])
+        nested = dict(event, body="&amp;lt;script&amp;gt;")
+        self.assertEqual(decode_event(nested)["decoded_body"], "&lt;script&gt;")
+        self.assertEqual(decode_event(dict(event, body="&unknown;"))["decode_status"], "OK")
+
     def test_T01_url_decoding(self):
         raw = "/Search?q=%27%20OR%201%3D1&path=a+b&once=%2527"
         event = {"application_protocol": "HTTP", "http_target": raw,

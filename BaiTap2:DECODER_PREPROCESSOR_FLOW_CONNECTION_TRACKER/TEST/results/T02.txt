@@ -1,0 +1,6 @@
+test_T02_html_entities (TEST.test_decoder.DecoderTests.test_T02_html_entities) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+OK
