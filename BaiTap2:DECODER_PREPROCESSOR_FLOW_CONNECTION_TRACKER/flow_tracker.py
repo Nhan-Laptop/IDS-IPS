@@ -31,9 +31,26 @@ def _new_flow(tracker, event, now):
         "SYN_count": 0, "ACK_count": 0, "FIN_count": 0, "RST_count": 0,
         "state": "NEW" if event["transport_protocol"] == "TCP" else "ACTIVE",
         "_start_seconds": now, "_last_seconds": now,
+        "_syn_direction": None, "_synack_seen": False,
     }
     tracker["next_id"] += 1
     return flow
+
+
+def _tcp_handshake(flow, event, direction):
+    flags = event["tcp_flags"]
+    if flow["state"] not in ("NEW", "HANDSHAKE"):
+        return
+    if "SYN" in flags and "ACK" not in flags:
+        if flow["_syn_direction"] is None:
+            flow["_syn_direction"] = direction
+        flow["state"] = "HANDSHAKE"
+    elif "SYN" in flags and "ACK" in flags:
+        if flow["_syn_direction"] is not None and direction != flow["_syn_direction"]:
+            flow["_synack_seen"] = True
+            flow["state"] = "HANDSHAKE"
+    elif "ACK" in flags and flow["_synack_seen"] and direction == flow["_syn_direction"]:
+        flow["state"] = "ESTABLISHED"
 
 
 def track_event(tracker, event):
@@ -75,5 +92,6 @@ def track_event(tracker, event):
         for flag in ("SYN", "ACK", "FIN", "RST"):
             if flag in result["tcp_flags"]:
                 flow[f"{flag}_count"] += 1
+        _tcp_handshake(flow, result, direction)
     result.update(flow_id=flow["flow_id"], direction=direction, flow_state=flow["state"], track_status="OK")
     return result, []
